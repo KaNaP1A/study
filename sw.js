@@ -1,6 +1,6 @@
-const CACHE = "osy-study-singlefile-v4.0.0";
+const CACHE = "osy-study-singlefile-v5.0.0";
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(["./", "./index.html"]))
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(["./", "./index.html", "./lab1.html"]))
     .then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", event => {
@@ -15,7 +15,7 @@ self.addEventListener("fetch", event => {
   event.respondWith(fetch(req).then(resp => {
     if (resp.ok && req.mode === "navigate") {
       const copy = resp.clone();
-      caches.open(CACHE).then(cache => cache.put("./index.html", copy)).catch(() => {});
+      caches.open(CACHE).then(cache => cache.put(req, copy)).catch(() => {});
     }
     return resp;
   }).catch(async () => {
