@@ -1,5 +1,5 @@
 {
-  "version": "5.0.0",
+  "version": "6.0.0",
   "updated": "2026-11-06",
-  "notes": "Separate lab #1 defense course, 18 lessons, 90 questions, 30 oral flashcards; existing 44 lecture lessons unchanged."
+  "notes": "Lab 1 course reordered for zero-prerequisite learning; glossary and definitions before each lesson; theory and code integrated."
 }
