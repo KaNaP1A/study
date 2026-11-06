@@ -1,4 +1,4 @@
-const CACHE = "osy-study-singlefile-v5.0.0";
+const CACHE = "osy-study-singlefile-v6.0.0";
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(["./", "./index.html", "./lab1.html"]))
     .then(() => self.skipWaiting()));
