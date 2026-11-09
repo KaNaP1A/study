@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b1120"><title>OSY.study · Лабораторная №2 — многопоточность и QuickSort</title>
+<meta name="description" content="Полная теория для защиты лабораторной №2: потоки, pthread, QuickSort, синхронизация, память, кэш, закон Амдала, тестирование и интерактивный экзамен.">
+<style>
+:root{color-scheme:dark;--bg:#0b1120;--side:#0e1525;--card:#151f32;--card2:#1b2940;--line:#2b3854;--text:#eff3fc;--muted:#a9bad0;--dim:#8193ad;--violet:#b3a6ff;--mint:#69dbb8;--amber:#ffca87;--red:#ff9d99}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}a{color:#c1b9ff;text-decoration:none}a:hover{text-decoration:underline}button,input{font:inherit}button{cursor:pointer}button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--violet);outline-offset:3px}
+.layout{display:grid;grid-template-columns:298px minmax(0,1fr);min-height:100vh}.sidebar{background:var(--side);border-right:1px solid var(--line);height:100vh;overflow-y:auto;position:sticky;top:0;padding:19px 13px 35px;scrollbar-width:thin}.logo{font-size:22px;letter-spacing:-.7px;font-weight:800;padding:0 10px}.logo em{font-style:normal;color:var(--violet)}.sublogo{padding:0 10px;color:var(--dim);font-size:11px}.back{display:block;margin:17px 10px 22px;font-size:12px}.label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;font-weight:800;color:var(--dim);padding:0 11px;margin:18px 0 8px}.moduleButton{width:100%;background:transparent;border:0;border-radius:10px;padding:11px 10px;text-align:left;color:#b1bfd5;display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.45}.moduleButton:hover,.moduleButton.selected{background:#252a43;color:white}.moduleButton b{color:var(--violet);min-width:23px}.moduleButton .count{margin-left:auto;color:var(--dim);white-space:nowrap;font-size:10px}.navLesson{display:block;background:transparent;border:0;color:#8e9eb7;margin-left:22px;text-align:left;font-size:11px;padding:5px 9px;width:calc(100% - 22px);border-radius:8px}.navLesson:hover,.navLesson.selected{background:#242b44;color:#fff}.navLesson.done:before{content:"✓ ";color:var(--mint)}
+.sideFooter{margin:22px 9px 0;border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:12px}.meter{background:#2d3b57;height:6px;border-radius:20px;overflow:hidden;margin-top:8px}.meter span{display:block;background:linear-gradient(90deg,var(--violet),var(--mint));height:100%;width:0;transition:width .2s}
+.content{min-width:0}.topbar{position:sticky;top:0;z-index:8;height:64px;background:#0b1120ef;backdrop-filter:blur(10px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:8px 32px;gap:12px}.topname{font-weight:700;font-size:13px}.toplinks{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.control{background:#212d45;border:1px solid #34435e;color:#e9efff;padding:9px 13px;border-radius:10px;font-size:12px;font-weight:700}.control:hover{background:#313d5b}.control.primary{background:#7770e4;border-color:#7770e4;color:white}.control.active{border-color:#afa7ff;color:#fff;background:#37345d}
+.main{max-width:1000px;margin:auto;padding:36px 32px 100px}.hero{padding:30px;border-radius:22px;border:1px solid #494571;background:radial-gradient(circle at 90% 5%,#48407877,transparent 38%),linear-gradient(120deg,#222541,#171e32);margin-bottom:22px}.eyebrow{letter-spacing:1.65px;color:var(--mint);font-size:10px;font-weight:900;text-transform:uppercase}.hero h1{font-size:clamp(26px,4vw,43px);line-height:1.18;letter-spacing:-1.2px;margin:8px 0 13px}.hero p{font-size:15px;color:#c1d0df;max-width:720px}.stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}.badge{background:#27314c;color:#e1e6fa;border:1px solid #495071;border-radius:30px;padding:4px 11px;font-size:11px}.btnrow{display:flex;flex-wrap:wrap;gap:9px;margin-top:19px}.h2{font-size:27px;line-height:1.28;letter-spacing:-.7px;margin:15px 0}.lead{font-size:16px;color:#c6d5e8}.panel{border:1px solid var(--line);background:var(--card);border-radius:17px;padding:23px;margin:16px 0}.panel h2,.panel h3{margin:0 0 10px}.panel h3{color:#e0ddff;font-size:18px}.theory{font-size:15px;line-height:1.78}.theory h3{margin:23px 0 9px;font-size:18px;color:#e7e2ff}.theory p{margin:0 0 14px}.theory ul,.theory ol{padding-left:23px}.theory li{margin:7px 0}.theory strong{color:white}.theory pre{overflow:auto;background:#0a1220;border:1px solid #35435e;border-radius:11px;padding:15px 17px;color:#c5f0de;font:13px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace}.theory code{background:#282944;color:#dcd3ff;padding:2px 5px;border-radius:5px;font-size:.93em}.theory pre code{background:transparent;color:inherit;padding:0}.theory blockquote,.callout{background:#282a44;border-left:3px solid var(--violet);padding:14px 18px;margin:15px 0;border-radius:0 10px 10px 0;color:#e0e4f4}.theory .warning{border-left:3px solid var(--amber);background:#302d2b;padding:13px 17px;border-radius:0 9px 9px 0}.theory .good{border-left:3px solid var(--mint);background:#1a3736;padding:13px 17px;border-radius:0 9px 9px 0}.diagram{white-space:pre;overflow:auto;background:#101b2c;padding:15px;border:1px solid #35506b;border-radius:11px;color:#c1d7f1;font:13px/1.7 monospace}.tablewrap{overflow:auto}.dataTable{border-collapse:collapse;width:100%;font-size:13px;min-width:470px}.dataTable th,.dataTable td{border-bottom:1px solid #32405a;padding:10px;text-align:left}.dataTable th{color:var(--violet)}
+.lessonhead{margin:5px 0 22px}.source{font-size:11px;color:#9dacc4;margin:9px 0 0}.qcard{border:1px solid #384962;background:#17243a;border-radius:14px;padding:19px;margin:13px 0}.qcard h3{font-size:15px;line-height:1.55;margin:0 0 12px}.options{display:grid;gap:8px}.option{padding:11px 13px;border:1px solid #3b4b68;color:#e6eef9;background:#1e2b41;border-radius:10px;text-align:left;font-size:13px}.option:hover{background:#2a3a55}.option.correct{background:#1c4238;border-color:#5bc3a2}.option.wrong{background:#472a32;border-color:#e98c90}.explain{margin-top:12px;padding:13px;background:#233b3b;border-radius:9px;color:#d1ede4;font-size:13px}.cardgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:18px 0}.tile{background:var(--card);border:1px solid #34415b;border-radius:15px;padding:20px;text-align:left;min-height:162px;color:white}.tile:hover{border-color:#9f98d0}.tile small{color:var(--mint);font-weight:800}.tile h3{font-size:17px;margin:11px 0 6px}.tile p{font-size:12px;color:#a8b7ce;margin:0}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.search{width:100%;border:1px solid #43506c;border-radius:12px;background:#19243a;color:white;padding:14px}.muted{color:var(--muted)}.dim{color:var(--dim)}.lessonfoot{display:flex;gap:9px;justify-content:space-between;flex-wrap:wrap;margin-top:23px}.flash{display:flex;flex-direction:column;justify-content:center;min-height:240px;border:1px solid #656093;border-radius:16px;background:linear-gradient(130deg,#282c50,#182339);padding:30px}.flash h2{font-size:23px}.flash .answer{border-top:1px solid #5e6080;margin-top:18px;padding-top:16px;white-space:pre-wrap}.hidden{display:none!important}.small{font-size:12px}.mobileMenu{display:none}.overlay{display:none}.footer{font-size:11px;color:var(--dim);margin-top:36px;border-top:1px solid var(--line);padding-top:20px}
+@media(max-width:950px){.layout{grid-template-columns:245px minmax(0,1fr)}.main{padding:25px 21px 75px}.topbar{padding:8px 20px}}@media(max-width:680px){.layout{display:block}.sidebar{position:fixed;left:0;z-index:30;top:0;width:min(85vw,330px);height:100dvh;transform:translateX(-110%);transition:transform .2s}.sidebar.open{transform:none}.overlay.open{display:block;position:fixed;inset:0;background:#000a;z-index:20}.mobileMenu{display:inline-block}.topbar{padding:8px 13px}.topname{font-size:11px}.toplinks .control{padding:8px 10px}.main{padding:20px 15px 70px}.hero{padding:22px}.panel{padding:17px}.cardgrid{grid-template-columns:1fr}.theory pre{font-size:12px}}
+</style></head>
+<body><div id="overlay" class="overlay"></div><div class="layout">
+<aside class="sidebar" id="sidebar">
+<div class="logo">OSY<em>.study</em></div><div class="sublogo">Интерактивная защита · лабораторная №2</div>
+<a class="back" href="index.html">← Главная курса</a>
+<div class="label">Модули и уроки</div><nav id="nav"></nav>
+<div class="sideFooter"><div id="countDone">0 / 0 уроков</div><div class="meter"><span id="progressBar"></span></div><p>Прогресс хранится в этом браузере.</p><button class="control" id="resetProgress">Сбросить прогресс</button></div>
+</aside>
+<div class="content"><header class="topbar"><div style="display:flex;align-items:center;gap:8px"><button class="control mobileMenu" id="menuBtn">☰</button><div class="topname" id="bread">Лабораторная №2 · QuickSort</div></div><div class="toplinks"><button class="control active" id="theoryBtn">Теория</button><button class="control" id="flashBtn">Карточки</button><button class="control primary" id="examBtn">Экзамен</button></div></header>
+<main class="main" id="view"></main></div></div>
+<script>
+const MODULES=[
+["01","Задание и QuickSort","Алгоритм, опора, разбиения, сложность"],
+["02","Процессы и POSIX Threads","Память процесса, создание, join, жизненный цикл"],
+["03","Синхронизация","Гонка данных, мьютексы, deadlock и средства защиты"],
+["04","Производительность","Измерения, ускорение, эффективность, закон Амдала"],
+["05","CPU и память","Планировщик, кэш, RAM, виртуальная память"],
+["06","Наш код и защита","Функции, терминал, тесты, объяснение преподавателю"]
+];
+const LESSONS=[];
+function add(m,title,source,body,qs){LESSONS.push({m:m,title:title,source:source,body:body,qs:qs});}
+/*__LESSONS__*/
+const KEY="osy-lab2-progress-2026-v1";
+let done={};try{done=JSON.parse(localStorage.getItem(KEY)||"{}")||{}}catch(e){done={}}
+let mode="home",chosen=-1,exam=[],examAnswers=[],timer=0,clockId=null,flashIndex=0,flashShow=false;
+const $=id=>document.getElementById(id);
+function safe(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function save(){localStorage.setItem(KEY,JSON.stringify(done))}
+function updateProgress(){let n=LESSONS.filter((l,i)=>done[i]).length;$("countDone").textContent=n+" / "+LESSONS.length+" уроков";$("progressBar").style.width=(LESSONS.length?100*n/LESSONS.length:0)+"%"}
+function setMode(m){mode=m;for(let key of ["theory","flash","exam"]){let b=$(key+"Btn");if(b)b.classList.toggle("active",key===m||m==="home"&&key==="theory")}}
+function closeMenu(){$("sidebar").classList.remove("open");$("overlay").classList.remove("open")}
+function drawNav(){
+ const wrap=$("nav");wrap.innerHTML="";
+ MODULES.forEach((mod,i)=>{
+ const list=LESSONS.map((x,j)=>({x,j})).filter(o=>o.x.m===i);
+ const btn=document.createElement("button");btn.className="moduleButton"+(chosen>=0&&LESSONS[chosen].m===i?" selected":"");
+ btn.innerHTML="<b>"+mod[0]+"</b><span>"+safe(mod[1])+"</span><span class='count'>"+list.filter(o=>done[o.j]).length+"/"+list.length+"</span>";
+ btn.onclick=()=>{home(i);closeMenu()};wrap.appendChild(btn);
+ list.forEach(o=>{const b=document.createElement("button");b.className="navLesson"+(chosen===o.j?" selected":"")+(done[o.j]?" done":"");b.textContent=o.x.title;b.onclick=()=>{lesson(o.j);closeMenu()};wrap.appendChild(b)});
+ });updateProgress();
+}
+function hero(){
+ return '<div class="hero"><div class="eyebrow">MAI · Операционные системы · C / POSIX</div><h1>Лабораторная №2<br>Параллельная быстрая сортировка</h1><p>Последовательный и параллельный QuickSort, pthread, синхронизация, процессор, память и теория для защиты на 4–5. После каждого блока — вопросы с объяснениями. Есть карточки и экзамен с таймером.</p><div class="stats"><span class="badge">'+LESSONS.length+' уроков</span><span class="badge">'+LESSONS.reduce((s,l)=>s+l.qs.length,0)+' вопросов</span><span class="badge">6 модулей</span><span class="badge">Прогресс сохраняется</span></div><div class="btnrow"><button class="control primary" onclick="lesson(0)">Начать обучение →</button><button class="control" onclick="startExam()">Проверить знания</button><a class="control" href="lab1.html">Теория ЛР №1 ↗</a></div></div>';
+}
+function home(selectModule){
+ chosen=-1;setMode("home");$("bread").textContent="Лабораторная №2 · Все модули";drawNav();
+ const cards=MODULES.map((m,i)=>{let ls=LESSONS.map((x,j)=>({x,j})).filter(o=>o.x.m===i);let seen=ls.filter(o=>done[o.j]).length;return '<button class="tile" onclick="lesson('+ls[0].j+')"><small>МОДУЛЬ '+m[0]+' · '+seen+'/'+ls.length+'</small><h3>'+m[1]+'</h3><p>'+m[2]+'</p><div class="meter"><span style="width:'+(ls.length?100*seen/ls.length:0)+'%"></span></div></button>'}).join("");
+ let selected=selectModule!=null?'<div class="panel"><h3>'+MODULES[selectModule][1]+'</h3>'+LESSONS.map((l,j)=>l.m===selectModule?'<p><button class="control" onclick="lesson('+j+')">'+(done[j]?'✓ ':'')+safe(l.title)+'</button></p>':'').join("")+'</div>':'';
+ $("view").innerHTML=hero()+'<div class="toolbar"><input class="search" id="search" type="search" placeholder="Поиск: mutex, CAS, pthread_join, fork, кэш, O(n log n)…"></div><div class="cardgrid">'+cards+'</div>'+selected+'<div class="panel"><h3>Как готовиться</h3><p>Пройди 6 модулей по порядку, отвечай на вопросы после блока, затем повтори карточки и сдай тренировочный экзамен. В блоке «Наш код и защита» разбираются конкретные функции из проекта.</p><p class="muted">Основа: лекции №1–4 МАИ, Таненбаум/Бос «Современные операционные системы», 4-е изд. Объяснение самой сортировки и обоснование инженерных решений добавлены отдельно.</p></div>';
+ $("search").addEventListener("input",e=>search(e.target.value));
+}
+function search(term){
+ const q=term.trim().toLowerCase();if(!q){document.querySelector(".cardgrid").style.display="grid";document.querySelector("#results")?.remove();return}
+ document.querySelector(".cardgrid").style.display="none";document.querySelector("#results")?.remove();
+ const entries=LESSONS.map((l,i)=>({l,i})).filter(o=>(o.l.title+" "+o.l.body.replace(/<[^>]*>/g," ")+" "+o.l.qs.map(q=>q[0]).join(" ")).toLowerCase().includes(q));
+ const d=document.createElement("div");d.id="results";d.className="panel";d.innerHTML="<h3>Найдено: "+entries.length+"</h3>"+entries.map(o=>'<p><button class="control" onclick="lesson('+o.i+')">'+MODULES[o.l.m][0]+': '+safe(o.l.title)+'</button></p>').join("");document.querySelector(".cardgrid").after(d)
+}
+function lesson(i){
+ chosen=i;const l=LESSONS[i];if(!l)return;setMode("theory");$("bread").textContent=MODULES[l.m][1]+" / "+l.title;drawNav();window.scrollTo(0,0);
+ $("view").innerHTML='<div class="lessonhead"><div class="eyebrow">Модуль '+MODULES[l.m][0]+' · урок '+(i+1)+' / '+LESSONS.length+'</div><h1 class="h2">'+safe(l.title)+'</h1><div class="source">Источник: '+safe(l.source)+'</div></div><article class="panel theory">'+l.body+'</article><section><h2 class="h2">Проверь понимание</h2><p class="muted">Выбери ответ. После выбора появится объяснение.</p><div id="qs"></div></section><div class="lessonfoot"><button class="control" onclick="lesson('+Math.max(0,i-1)+')">← Предыдущий</button><button class="control primary" id="doneBtn" onclick="markDone('+i+')">'+(done[i]?"✓ Пройдено":"Отметить пройденным")+'</button><button class="control" onclick="lesson('+Math.min(LESSONS.length-1,i+1)+')">Следующий →</button></div>';
+ l.qs.forEach((q,k)=>showQuestion($("qs"),q,i+"-"+k,true));
+}
+function markDone(i){done[i]=true;save();drawNav();$("doneBtn").textContent="✓ Пройдено"}
+function showQuestion(container,q,key,immediate){
+ const box=document.createElement("div");box.className="qcard";box.innerHTML='<h3>'+safe(q[0])+'</h3><div class="options"></div><div class="explain hidden"></div>';const opts=box.querySelector(".options"),ex=box.querySelector(".explain");
+ q[1].forEach((choice,j)=>{const b=document.createElement("button");b.className="option";b.textContent=String.fromCharCode(65+j)+". "+choice;b.onclick=()=>{
+ if(box.dataset.answered)return;box.dataset.answered="1";Array.from(opts.children).forEach((o,k)=>{o.disabled=true;if(k===q[2])o.classList.add("correct");else if(k===j)o.classList.add("wrong")});
+ ex.textContent=(j===q[2]?"Верно. ":"Неверно. ")+q[3];ex.classList.remove("hidden");
+ };opts.appendChild(b)});
+ container.appendChild(box);return box;
+}
+function allQuestions(){let all=[];LESSONS.forEach((l,i)=>l.qs.forEach(q=>all.push({q:q,lesson:i})));return all}
+function shuffle(a){let out=a.slice();for(let i=out.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[out[i],out[j]]=[out[j],out[i]]}return out}
+function startExam(){
+ clearInterval(clockId);chosen=-1;setMode("exam");drawNav();$("bread").textContent="Тренировочный экзамен";
+ exam=shuffle(allQuestions()).slice(0,15);examAnswers=Array(15).fill(-1);timer=12*60;
+ $("view").innerHTML='<div class="eyebrow">ТРЕНИРОВКА К ЗАЩИТЕ</div><h1 class="h2">Экзамен · 15 вопросов</h1><p class="lead">Случайные вопросы по всей теории. 12 минут, один ответ на вопрос. Для тренировки на 4–5 стремись к 12–15 правильным ответам; это не официальная система оценивания преподавателя.</p><div class="panel" style="display:flex;align-items:center;justify-content:space-between"><strong id="examClock">12:00</strong><span id="examCounter">0 / 15 ответов</span></div><div id="examQuestions"></div><div class="toolbar"><button class="control primary" onclick="finishExam()">Проверить ответы</button><button class="control" onclick="startExam()">Другой вариант</button></div><div id="examResult"></div>';
+ const host=$("examQuestions");exam.forEach((item,i)=>{
+ let div=document.createElement("div");div.className="qcard";div.innerHTML='<h3>'+(i+1)+'. '+safe(item.q[0])+'</h3><div class="options"></div>';item.q[1].forEach((choice,j)=>{let b=document.createElement("button");b.className="option";b.textContent=String.fromCharCode(65+j)+". "+choice;b.onclick=()=>{examAnswers[i]=j;Array.from(div.querySelector(".options").children).forEach((el,k)=>el.classList.toggle("selected",k===j));$("examCounter").textContent=examAnswers.filter(x=>x!==-1).length+" / 15 ответов"};div.querySelector(".options").appendChild(b)});host.appendChild(div)
+ });clockId=setInterval(()=>{timer--;if($("examClock"))$("examClock").textContent=Math.floor(timer/60)+":"+String(timer%60).padStart(2,"0");if(timer<=0)finishExam()},1000);window.scrollTo(0,0);
+}
+function finishExam(){
+ clearInterval(clockId);if(!exam.length || $("examResult")?.dataset.finished)return;let score=0;
+ const cards=$("examQuestions").children;exam.forEach((item,i)=>{const q=item.q,box=cards[i];if(examAnswers[i]===q[2])score++;Array.from(box.querySelector(".options").children).forEach((el,j)=>{el.disabled=true;if(j===q[2])el.classList.add("correct");else if(j===examAnswers[i])el.classList.add("wrong")});const d=document.createElement("div");d.className="explain";d.textContent="Правильный ответ: "+q[1][q[2]]+". "+q[3];box.appendChild(d)});
+ let result=$("examResult");result.dataset.finished="1";result.innerHTML='<div class="panel"><h2>Результат: '+score+' / '+exam.length+'</h2><p>'+(score>=13?"Очень хорошее знание материала.":score>=10?"Основы освоены; повтори ошибки.":"Стоит пройти теорию и повторить карточки.")+'</p><button class="control primary" onclick="startExam()">Пройти ещё раз</button></div>';result.scrollIntoView({behavior:"smooth"});
+}
+function flashcards(){
+ chosen=-1;setMode("flash");drawNav();$("bread").textContent="Карточки для повторения";flashIndex=0;flashShow=false;renderFlash();
+}
+function renderFlash(){
+ const all=allQuestions();if(!all.length)return;flashIndex=(flashIndex+all.length)%all.length;const item=all[flashIndex],q=item.q;
+ $("view").innerHTML='<div class="eyebrow">ПОВТОРЕНИЕ</div><h1 class="h2">Карточки · '+(flashIndex+1)+' / '+all.length+'</h1><div class="flash"><div class="eyebrow">'+safe(MODULES[LESSONS[item.lesson].m][1])+'</div><h2>'+safe(q[0])+'</h2><div class="answer '+(flashShow?"":"hidden")+'"><strong>'+safe(q[1][q[2]])+'</strong><p>'+safe(q[3])+'</p></div></div><div class="toolbar"><button class="control" onclick="flashIndex--;flashShow=false;renderFlash()">← Назад</button><button class="control primary" onclick="flashShow=!flashShow;renderFlash()">'+(flashShow?"Скрыть ответ":"Показать ответ")+'</button><button class="control" onclick="flashIndex++;flashShow=false;renderFlash()">Дальше →</button><button class="control" onclick="flashIndex=Math.floor(Math.random()*all.length);flashShow=false;renderFlash()">Случайная</button></div><p class="muted">Формулируй ответ вслух до открытия карточки.</p>';window.scrollTo(0,0)
+}
+$("theoryBtn").onclick=()=>home();$("flashBtn").onclick=()=>flashcards();$("examBtn").onclick=()=>startExam();
+$("menuBtn").onclick=()=>{$("sidebar").classList.toggle("open");$("overlay").classList.toggle("open")};$("overlay").onclick=closeMenu;
+$("resetProgress").onclick=()=>{if(confirm("Сбросить отметки пройденных уроков?")){done={};save();drawNav();if(chosen>=0)lesson(chosen)}};
+home();
+</script>
+</body></html>
