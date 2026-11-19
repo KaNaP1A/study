@@ -437,8 +437,153 @@ function drawNav(){
  list.forEach(o=>{const b=document.createElement("button");b.className="navLesson"+(chosen===o.j?" selected":"")+(done[o.j]?" done":"");b.textContent=o.x.title;b.onclick=()=>{lesson(o.j);closeMenu()};wrap.appendChild(b)});
  });updateProgress();
 }
+
+const SIM_CONFIG={
+ partition:["Разбиение QuickSort (схема Хоара)","Пример: pivot = 5 в середине исходного массива; меняем местами элементы и получаем независимые диапазоны.",1],
+ threads:["Процесс и потоки","Переключи вид между двумя потоками одного процесса и двумя самостоятельными процессами.",2],
+ mutex:["Mutex: два потока и общий счётчик","Пошагово: lock, ожидание, изменение counter и unlock.",4],
+ deadlock:["Deadlock: ожидание ресурсов","Построим цикл ожидания двух mutex, чтобы понять, почему программа зависает.",5],
+ speedup:["Ускорение и эффективность","Изменяй времена сортировки и лимит потоков — формулы пересчитываются.",6],
+ memory:["Стек, heap и время жизни массива","Что происходит с общим массивом до запуска pthread, во время работы и после join.",9],
+ limit:["Лимит потоков и счётчик reserved","Пример ThreadContext с max_threads = 3, включая основной поток.",10]
+};
+const LESSON_SIMS={1:"partition",2:"threads",4:"mutex",5:"deadlock",6:"speedup",9:"memory",10:"limit"};
+const SIM_NAMES=Object.keys(SIM_CONFIG);
+const simIndices={};
+const simSteps={
+ partition:[
+  {v:[8,2,4,5,9,1,3],border:-1,pivot:3,msg:"Старт: pivot = arr[3] = 5. Смотрим на левый элемент 8 и правый 3; они находятся не на нужных сторонах."},
+  {v:[3,2,4,5,9,1,8],border:-1,msg:"Обмен 8 и 3. В начале оказался меньший элемент, справа — больший."},
+  {v:[3,2,4,1,9,5,8],border:-1,msg:"Обмен 5 и 1. Значение pivot переместилось; оно не обязано сразу оказаться на итоговой позиции."},
+  {v:[3,2,4,1,9,5,8],border:4,msg:"Разделение завершилось: левая часть [0,4), правая [4,7). Эти диапазоны не пересекаются."},
+  {v:[1,2,3,4,5,8,9],border:4,msg:"Независимо сортируем обе части. Массив становится отсортированным без отдельного слияния."}
+ ],
+ mutex:[
+  {counter:0,owner:"свободен",a:"Готов увеличить counter",b:"Готов увеличить counter",msg:"Исходное состояние: два потока обращаются к одной переменной counter, равной 0."},
+  {counter:0,owner:"Поток А",a:"pthread_mutex_lock — захватил",b:"Выполняет свой код",msg:"Поток А захватил mutex и может войти в критическую секцию."},
+  {counter:0,owner:"Поток А",a:"Читает counter = 0",b:"Пробует lock → ожидает",msg:"Б не может захватить тот же mutex, пока А его удерживает."},
+  {counter:1,owner:"Поток А",a:"Записывает counter = 1",b:"Ожидает",msg:"Первое увеличение выполнено. Весь участок чтения и записи защищён mutex."},
+  {counter:1,owner:"свободен",a:"pthread_mutex_unlock",b:"Получит право попытаться захватить",msg:"А освободил mutex. Теперь Б сможет захватить блокировку, когда ОС даст ему выполнение."},
+  {counter:2,owner:"Поток Б",a:"Работает вне секции",b:"Захватил mutex, прочитал 1, записал 2",msg:"Б видит обновлённый counter = 1, увеличивает его до 2, пока владеет mutex."},
+  {counter:2,owner:"свободен",a:"Закончил работу",b:"pthread_mutex_unlock",msg:"Результат counter = 2. В QuickSort аналогично защищают reserved, а не весь массив."}
+ ],
+ threads:[
+  {same:true,msg:"У pthread одного процесса одна виртуальная память, общий heap и обычные глобальные переменные. Стек и регистры у каждого свои. В QuickSort так обрабатывается один массив по двум диапазонам."},
+  {same:false,msg:"У самостоятельных процессов обычно разные виртуальные адресные пространства. Нельзя передать обычный указатель одного процесса другому и ожидать доступа к тем же данным без особых механизмов."}
+ ],
+ deadlock:[
+  {m1:"свободен",m2:"свободен",a:"Готов",b:"Готов",msg:"Два mutex свободны."},
+  {m1:"занят А",m2:"свободен",a:"Удерживает M1",b:"Готов",msg:"Поток А захватывает M1."},
+  {m1:"занят А",m2:"занят Б",a:"Удерживает M1",b:"Удерживает M2",msg:"Поток Б захватывает M2."},
+  {m1:"занят А",m2:"занят Б",a:"Ждёт M2 и удерживает M1",b:"Удерживает M2",msg:"Поток А пытается захватить M2 и блокируется, продолжая удерживать M1."},
+  {m1:"занят А",m2:"занят Б",a:"Ждёт M2 и удерживает M1",b:"Ждёт M1 и удерживает M2",msg:"Deadlock: А ждёт Б, а Б ждёт А; ни один не дойдёт до unlock. Возможна и самоблокировка одного потока, дважды захватившего PTHREAD_MUTEX_NORMAL."}
+ ],
+ memory:[
+  {heap:"Массив выделен через malloc",a:"Основной поток",b:"Ещё нет рабочего потока",msg:"Массив существует в динамической памяти процесса. Пока нет нового pthread, основному потоку доступен один указатель arr."},
+  {heap:"Общий массив arr",a:"Стек: свои вызовы parallel_range",b:"Стек: свои вызовы thread_entry",msg:"Два потока сортируют непересекающиеся части ОДНОГО массива. Кадры рекурсии у них расположены в отдельных стеках."},
+  {heap:"Массив освобождён после завершения всех потоков",a:"Все join завершены",b:"Рабочий поток завершён",msg:"free(arr) разрешён, когда никто больше не обращается к массиву. Вызов free до окончания работы создаёт use-after-free."}
+ ],
+ limit:[
+  {r:1,what:"Основной поток уже учитывается",msg:"max_threads = 3, reserved = 1. Можно создать ещё не более двух дополнительных работников."},
+  {r:2,what:"Первый работник занял место",msg:"Первый поток захватил mutex, проверил квоту и увеличил reserved до 2."},
+  {r:3,what:"Второй работник занял последнее место",msg:"reserved = max_threads = 3. Больше новых потоков одновременно резервировать нельзя."},
+  {r:3,what:"Ещё один запрос не получает квоту",msg:"Проверка под mutex показывает отсутствие свободных мест; рекурсия выполняет работу текущим потоком."},
+  {r:2,what:"После join один слот освобождён",msg:"release_thread уменьшил reserved, теперь снова доступно одно место."},
+  {r:3,what:"Новая ветвь может занять свободное место",msg:"created_total может увеличиваться за весь запуск, даже при одном и том же ограничении max_threads."}
+ ]
+};
+function simPair(a,b){return '<div class="sim-columns"><div class="sim-block"><strong>Поток А</strong><p>'+safe(a)+'</p></div><div class="sim-block"><strong>Поток Б</strong><p>'+safe(b)+'</p></div></div>'}
+function simHtml(type){
+ const c=SIM_CONFIG[type];if(!c)return "";
+ return '<section class="sim-wrap"><div class="eyebrow">ИНТЕРАКТИВНАЯ СХЕМА · УРОК '+(c[2]+1)+'</div>'+
+ '<h3>'+safe(c[0])+'</h3><p class="muted">'+safe(c[1])+'</p>'+
+ '<div class="sim-stage" id="sim-stage-'+type+'"></div>'+
+ (type==="speedup"?"":'<div class="sim-controls">'+
+ '<button class="control" id="sim-prev-'+type+'">← Назад</button>'+
+ '<button class="control primary" id="sim-next-'+type+'">Следующий шаг →</button>'+
+ '<button class="control" id="sim-reset-'+type+'">Заново</button>'+
+ '<span class="small" id="sim-count-'+type+'"></span></div>')+
+ '<div class="sim-stepnote" id="sim-note-'+type+'"></div></section>';
+}
+function simSet(type,index){simIndices[type]=Math.max(0,Math.min(simSteps[type].length-1,index));simRender(type)}
+function simRender(type){
+ const stage=$("sim-stage-"+type),note=$("sim-note-"+type);if(!stage||!note)return;
+ if(type==="speedup"){simSpeedupSetup();return}
+ const index=simIndices[type]||0,x=simSteps[type][index];
+ let html="";
+ if(type==="partition"){
+  const cells=x.v.map((n,i)=>'<div class="sim-node '+(x.border>=0?(i<x.border?"isleft":"isright"):"")+(x.pivot===i?" ispivot":"")+'">'+n+'</div>').join("");
+  html='<p class="small">Весь диапазон [0,7) · pivot = 5</p><div class="sim-nodes">'+cells+'</div>'+
+  '<p class="small">Индексы ячеек: 0 · 1 · 2 · 3 · 4 · 5 · 6</p>'+
+  (x.border>=0?'<p>Слева [0,4), справа [4,7)</p>':'<p>Продвигаем два индекса навстречу друг другу</p>');
+ }
+ if(type==="threads"){
+  if(x.same)html='<div class="sim-common"><strong>Один процесс</strong><p>Общие: код · heap · глобальные переменные · открытые файлы</p></div>'+simPair("Свой стек, регистры. Сортирует левую часть arr.","Свой стек, регистры. Сортирует правую часть arr.");
+  else html='<div class="sim-columns"><div class="sim-block"><strong>Процесс А</strong><p>Своё адресное пространство, heap и поток выполнения.</p></div><div class="sim-block"><strong>Процесс Б</strong><p>Другое адресное пространство, heap и поток выполнения.</p></div></div>';
+ }
+ if(type==="mutex"){
+  html='<div class="sim-common"><strong>Общий counter: <span class="sim-num">'+x.counter+'</span></strong><p>mutex: '+safe(x.owner)+'</p></div>'+
+  simPair(x.a,x.b);
+ }
+ if(type==="deadlock"){
+  html='<div class="sim-columns"><div class="sim-lockbox"><strong>M1</strong><p>'+safe(x.m1)+'</p></div><div class="sim-lockbox"><strong>M2</strong><p>'+safe(x.m2)+'</p></div></div>'+
+  simPair(x.a,x.b);
+ }
+ if(type==="memory"){
+  html='<div class="sim-common"><strong>Общая память процесса — heap</strong><p>'+safe(x.heap)+'</p></div>'+
+  simPair(x.a,x.b);
+ }
+ if(type==="limit"){
+  html='<div class="sim-common"><strong>max_threads = 3 · reserved = <span class="sim-num">'+x.r+'</span></strong></div>'+
+  '<div class="sim-nodes">'+[0,1,2].map(i=>'<div class="sim-node '+(i<x.r?"isleft":"")+'">'+(i<x.r?"●":"○")+'</div>').join("")+'</div><p>'+safe(x.what)+'</p>';
+ }
+ stage.innerHTML=html;note.textContent=x.msg;
+ const prev=$("sim-prev-"+type),next=$("sim-next-"+type),count=$("sim-count-"+type);
+ if(prev)prev.disabled=index===0;if(next)next.disabled=index===simSteps[type].length-1;
+ if(count)count.textContent="Шаг "+(index+1)+" из "+simSteps[type].length;
+}
+function simSpeedupSetup(){
+ const stage=$("sim-stage-speedup");
+ stage.innerHTML='<div class="sim-range">'+
+ '<label>T_seq (мс)<input type="range" id="sim-ts" min="20" max="300" value="100"><output id="sim-ts-out">100</output></label>'+
+ '<label>T_par (мс)<input type="range" id="sim-tp" min="5" max="300" value="25"><output id="sim-tp-out">25</output></label>'+
+ '<label>p (лимит потоков)<input type="range" id="sim-p" min="1" max="64" value="8"><output id="sim-p-out">8</output></label></div>'+
+ '<div class="sim-kpis"><div>Ускорение S = T_seq / T_par<strong id="sim-s">4.00×</strong></div>'+
+ '<div>Эффективность E = S / p<strong id="sim-e">50.0%</strong></div></div>'+
+ '<div class="sim-bar"><span id="sim-bar" style="width:50%"></span></div>';
+ ["ts","tp","p"].forEach(id=>{$("sim-"+id).oninput=simCalculate});
+ simCalculate();
+}
+function simCalculate(){
+ const ts=Number($("sim-ts").value),tp=Number($("sim-tp").value),p=Number($("sim-p").value);
+ const S=ts/tp,E=S/p;
+ ["ts","tp","p"].forEach((id,i)=>{$("sim-"+id+"-out").textContent=[ts,tp,p][i]});
+ $("sim-s").textContent=S.toFixed(2)+"×";$("sim-e").textContent=(100*E).toFixed(1)+"%";
+ $("sim-bar").style.width=Math.max(0,Math.min(100,100*E))+"%";
+ $("sim-note-speedup").textContent="При T_seq="+ts+" мс и T_par="+tp+" мс ускорение S="+S.toFixed(2)+
+ ". При p="+p+" эффективность E="+(100*E).toFixed(1)+"%. Здесь p — лимит потоков, а не измеренная загрузка CPU.";
+}
+function simInit(type){
+ if(type!=="speedup")simIndices[type]=0;
+ const prev=$("sim-prev-"+type),next=$("sim-next-"+type),reset=$("sim-reset-"+type);
+ if(prev)prev.onclick=()=>simSet(type,(simIndices[type]||0)-1);
+ if(next)next.onclick=()=>simSet(type,(simIndices[type]||0)+1);
+ if(reset)reset.onclick=()=>simSet(type,0);
+ simRender(type);
+}
+function showSimulations(selected="mutex"){
+ if(!SIM_CONFIG[selected])selected="mutex";
+ chosen=-1;setMode("sim");drawNav();$("bread").textContent="Интерактивные схемы · ЛР №2";
+ $("view").innerHTML='<div class="eyebrow">ВИЗУАЛЬНЫЙ ТРЕНАЖЁР</div><h1 class="h2">Интерактивные схемы</h1>'+
+ '<p class="lead">Разбирай механизмы ОС и QuickSort по шагам. Схемы учебные, не являются трассировкой реального запуска программы.</p>'+
+ '<div class="sim-selectors">'+SIM_NAMES.map(t=>'<button class="control '+(t===selected?"active":"")+'" data-sel-sim="'+t+'">'+safe(SIM_CONFIG[t][0])+'</button>').join("")+'</div>'+
+ simHtml(selected)+'<div class="toolbar"><button class="control" id="sim-to-lesson">Открыть подробный урок →</button></div>';
+ document.querySelectorAll("[data-sel-sim]").forEach(b=>b.onclick=()=>showSimulations(b.dataset.selSim));
+ $("sim-to-lesson").onclick=()=>lesson(SIM_CONFIG[selected][2]);
+ simInit(selected);window.scrollTo(0,0);
+}
 function hero(){
- return '<div class="hero"><div class="eyebrow">MAI · Операционные системы · C / POSIX</div><h1>Лабораторная №2<br>Параллельная быстрая сортировка</h1><p>Последовательный и параллельный QuickSort, pthread, синхронизация, процессор, память и теория для защиты на 4–5. После более крупных тематических уроков — задания с объяснениями и зачёт за правильные ответы. Есть словарь, карточки с отметками «знаю/не знаю» и экзамен с таймером.</p><div class="stats"><span class="badge">'+LESSONS.length+' уроков</span><span class="badge">'+LESSONS.reduce((s,l)=>s+l.qs.length,0)+' вопросов</span><span class="badge">6 модулей</span><span class="badge">Прогресс сохраняется</span></div><div class="btnrow"><button class="control primary" onclick="lesson(0)">Начать обучение →</button><button class="control" onclick="glossary()">Словарь терминов</button><button class="control" onclick="startExam()">Проверить знания</button><a class="control" href="index.html">Главная курса ↗</a></div></div>';
+ return '<div class="hero"><div class="eyebrow">MAI · Операционные системы · C / POSIX</div><h1>Лабораторная №2<br>Параллельная быстрая сортировка</h1><p>Последовательный и параллельный QuickSort, pthread, синхронизация, процессор, память и теория для защиты на 4–5. После более крупных тематических уроков — задания с объяснениями и зачёт за правильные ответы. Есть словарь, карточки с отметками «знаю/не знаю» и экзамен с таймером.</p><div class="stats"><span class="badge">'+LESSONS.length+' уроков</span><span class="badge">'+LESSONS.reduce((s,l)=>s+l.qs.length,0)+' вопросов</span><span class="badge">6 модулей</span><span class="badge">Прогресс сохраняется</span></div><div class="btnrow"><button class="control primary" onclick="lesson(0)">Начать обучение →</button><button class="control" onclick="glossary()">Словарь терминов</button><button class="control" onclick="showSimulations()">Интерактивные схемы</button><button class="control" onclick="startExam()">Проверить знания</button><a class="control" href="index.html">Главная курса ↗</a></div></div>';
 }
 function home(selectModule){
  chosen=-1;setMode("home");$("bread").textContent="Лабораторная №2 · Все модули";drawNav();
@@ -498,8 +643,10 @@ function lesson(i){
  chosen=i;const l=LESSONS[i];if(!l)return;
  setMode("theory");$("bread").textContent=MODULES[l.m][1]+" / "+l.title;drawNav();window.scrollTo(0,0);
  const terms=GLOSSARY.filter(t=>t[2]===l.m&&t[3]===l.part);
+ const simType=LESSON_SIMS[i],simBlock=simType?simHtml(simType):"";
  const termsHtml='<section class="panel terms-intro"><div class="eyebrow">ПЕРЕД УРОКОМ</div><h3>Основные определения</h3><p class="muted">Открой развёрнутый разбор: что это, как работает, пример из кода, типичные ошибки. Ключевые понятия раскрыты сразу. Все термины есть в словаре.</p><div class="term-grid">'+terms.map(t=>termCard(t,"term-card",["Mutex","Процесс","Поток","QuickSort","Deadlock","Ускорение (speedup)","Эффективность (efficiency)","partition"].includes(t[0]))).join("")+'</div><div class="toolbar"><button class="control" onclick="glossary()">Полный словарь</button></div></section>';
- $("view").innerHTML='<div class="lessonhead"><div class="eyebrow">Модуль '+MODULES[l.m][0]+' · урок '+(i+1)+' / '+LESSONS.length+'</div><h1 class="h2">'+safe(l.title)+'</h1><div class="source">Источники: '+safe(l.source)+'</div><div class="stats"><span class="badge">'+l.qs.length+' вопросов</span><span class="badge">Зачёт: '+Math.ceil(l.qs.length*0.8)+' правильных</span></div></div>'+termsHtml+'<article class="panel theory">'+l.body+'</article><section id="quiz"><h2 class="h2">Проверь понимание</h2><p class="muted">Ответь на все вопросы по теории, ситуациям и конкретным функциям. После каждого ответа появится пояснение. Зачёт выставляется автоматически при результате не ниже 80%.</p><div id="qs"></div><div id="quizSummary" class="quiz-summary"></div></section><div class="lessonfoot"><button class="control" onclick="lesson('+Math.max(0,i-1)+')">← Предыдущий</button><button class="control" onclick="home()">Все модули</button><button class="control primary" onclick="lesson('+Math.min(LESSONS.length-1,i+1)+')">Следующий →</button></div>';
+ $("view").innerHTML='<div class="lessonhead"><div class="eyebrow">Модуль '+MODULES[l.m][0]+' · урок '+(i+1)+' / '+LESSONS.length+'</div><h1 class="h2">'+safe(l.title)+'</h1><div class="source">Источники: '+safe(l.source)+'</div><div class="stats"><span class="badge">'+l.qs.length+' вопросов</span><span class="badge">Зачёт: '+Math.ceil(l.qs.length*0.8)+' правильных</span></div></div>'+termsHtml+'<article class="panel theory">'+l.body+simBlock+'</article><section id="quiz"><h2 class="h2">Проверь понимание</h2><p class="muted">Ответь на все вопросы по теории, ситуациям и конкретным функциям. После каждого ответа появится пояснение. Зачёт выставляется автоматически при результате не ниже 80%.</p><div id="qs"></div><div id="quizSummary" class="quiz-summary"></div></section><div class="lessonfoot"><button class="control" onclick="lesson('+Math.max(0,i-1)+')">← Предыдущий</button><button class="control" onclick="home()">Все модули</button><button class="control primary" onclick="lesson('+Math.min(LESSONS.length-1,i+1)+')">Следующий →</button></div>';
+ if(simType)simInit(simType);
  const st=stateFor(i);l.qs.forEach((item,k)=>renderLessonQuestion($("qs"),item,i,k,st));updateLessonQuiz(i);
 }
 function renderLessonQuestion(host,item,i,k,state){
@@ -622,7 +769,7 @@ function renderFlash(){
  window.scrollTo(0,0);
 }
 
-$("theoryBtn").onclick=()=>home();$("glossBtn").onclick=()=>glossary();$("flashBtn").onclick=()=>flashcards();$("examBtn").onclick=()=>startExam();
+$("theoryBtn").onclick=()=>home();$("glossBtn").onclick=()=>glossary();$("simBtn").onclick=()=>showSimulations();$("flashBtn").onclick=()=>flashcards();$("examBtn").onclick=()=>startExam();
 $("menuBtn").onclick=()=>{$("sidebar").classList.toggle("open");$("overlay").classList.toggle("open")};$("overlay").onclick=closeMenu;
 $("resetProgress").onclick=()=>{if(confirm("Сбросить отметки пройденных уроков?")){done={};save();drawNav();if(chosen>=0)lesson(chosen)}};
 home();
