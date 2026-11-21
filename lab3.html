@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1120">
+<meta name="description" content="Лабораторная №3 по операционным системам на C: POSIX shared memory, mmap, fork, execve, именованные семафоры, полный разбор server/client, схемы, вопросы и карточки.">
+<title>OSY.study · Лабораторная №3 — Shared Memory и семафоры</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1120;--side:#0e1525;--card:#151f32;--card2:#1b2940;--line:#2b3854;--fg:#eff3fc;--muted:#aebdd1;--dim:#8497b2;--violet:#b3a6ff;--mint:#80d8b7;--amber:#f2c58a;--red:#f4a09e;--focus:#c9baff}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+a{color:#cec5ff;text-decoration:none}a:hover{text-decoration:underline}button,input{font:inherit}button{cursor:pointer}button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+.layout{display:grid;grid-template-columns:290px minmax(0,1fr);min-height:100vh}.sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;padding:19px 12px 30px;background:var(--side);border-right:1px solid var(--line);scrollbar-width:thin}
+.logo{font-size:24px;font-weight:800;letter-spacing:-.8px;padding:2px 10px}.logo i{color:var(--violet);font-style:normal}.sidebar .sub{font-size:12px;color:var(--dim);padding:0 10px 16px}.side-links{display:grid;gap:3px;margin-bottom:16px}
+.side-links a,.side-links button,.lesson-link{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;border:0;text-align:left;border-radius:10px;background:transparent;color:#cdd6e5;padding:10px 12px;font-size:13px;text-decoration:none!important;line-height:1.35}
+.side-links a:hover,.side-links button:hover,.lesson-link:hover{background:#1d2a41;color:#fff}.side-links a.active,.lesson-link.active{background:#273454;color:#fff;font-weight:700}
+.side-links small,.lesson-link small{color:var(--dim);font-size:10px;white-space:nowrap}.side-caption{margin:19px 12px 7px;color:var(--dim);font-weight:800;letter-spacing:1.3px;text-transform:uppercase;font-size:10px}
+.lesson-link{display:flex;padding:9px 11px;line-height:1.45}.lesson-link .mark{font-size:12px;color:var(--dim);flex:0 0 auto}.lesson-link.completed .mark{color:var(--mint)}
+.sidebar-progress{margin:14px 10px 0;padding:12px;border:1px solid var(--line);border-radius:12px;background:#121b2b;font-size:12px}.progress-track{height:6px;background:#2a3852;border-radius:10px;overflow:hidden;margin-top:9px}.progress-fill{height:100%;width:0;background:#99a5ea;border-radius:10px;transition:width .2s}
+.main{min-width:0}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 30px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(11,17,32,.96);backdrop-filter:blur(10px);z-index:5}.topbar .bread{font-size:12px;color:var(--muted)}.topbar .right{font-size:12px;color:var(--dim)}.menu-btn{display:none;padding:6px 10px;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--fg)}
+.content{padding:32px clamp(18px,5vw,64px) 90px;margin:0 auto;max-width:1190px}
+h1,h2,h3{letter-spacing:-.03em;line-height:1.3}h1{font-size:clamp(28px,4vw,41px);margin:10px 0 15px}h2{font-size:24px;margin:0 0 14px}h3{font-size:18px;margin:0 0 11px}.eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--violet);font-weight:800;margin:0 0 5px}.lead{font-size:16px;color:var(--muted);max-width:850px;line-height:1.7;margin:0 0 25px}
+p{margin:10px 0}strong,b{font-weight:700;color:#fff}.muted{color:var(--muted)}.small{font-size:12px}.subtle{font-size:11px;color:var(--dim)}
+.hero{border:1px solid var(--line);background:linear-gradient(130deg,#151f32,#111a2c);border-radius:19px;padding:27px 30px;margin:22px 0 26px}.hero h1{margin-top:0}.hero p{color:var(--muted);max-width:850px}.hero .actions{margin-top:22px}
+.statrow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0}.stat{border:1px solid var(--line);background:var(--card);border-radius:13px;padding:14px 17px}.stat strong{display:block;font-size:23px}.stat span{color:var(--dim);font-size:11px}
+.pill{display:inline-block;padding:3px 10px;border:1px solid #40516c;color:#b6c5e0;border-radius:99px;font-size:11px;font-weight:700;white-space:nowrap}.pill.done{color:#96e2c4;border-color:#427363}.pill.pending{color:#f0c89e;border-color:#735639}
+.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:22px;margin:15px 0}.card h3{margin-top:0}.card p:last-child{margin-bottom:0}.card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:16px 0}.click-card{display:block;text-decoration:none!important;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:19px;transition:border-color .16s}.click-card:hover{border-color:#8b8bb7}.click-card h3{margin:7px 0}.click-card p{color:var(--muted);font-size:12px;margin:0}.click-card .num{font-size:11px;color:var(--violet);font-weight:800}
+.lesson-body .segment{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:23px 26px;margin:16px 0}.lesson-body .segment h2{font-size:19px;color:#f1f4fa;margin-bottom:11px}.lesson-body .segment p{line-height:1.84;color:#cad5e5}.lesson-body .segment p b,.lesson-body .segment p strong{color:#fff}.lesson-body ol,.lesson-body ul{padding-left:23px;color:#cbd6e5}.lesson-body li{padding:3px 0}.lesson-body code,.card code{color:#c7bbff}
+pre{margin:16px 0;max-width:100%;overflow-x:auto;padding:17px;border-radius:11px;background:#0a1221;border:1px solid #293950;font-size:12px;line-height:1.75;white-space:pre}pre code{color:#e6eaf8!important;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.93em}
+.primary,.control{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 15px;color:#dbe5f3;background:#202d43;border:1px solid #394b67;border-radius:10px;font-weight:650;font-size:13px;line-height:1.3;min-height:40px;text-decoration:none!important}.primary{background:#403d69;border-color:#6b639f;color:white}.primary:hover{background:#4d4978}.control:hover{background:#2b3b57}.control[disabled]{opacity:.38;cursor:not-allowed}.buttons{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:16px 0}
+.banner{border-left:3px solid #a7a0dc;background:#1c2540;padding:15px 18px;border-radius:0 11px 11px 0;margin:17px 0;color:#d7deeb}.banner.warn{border-color:#e1bc85;background:#302a29}.banner.good{border-color:#8bd2b1;background:#1c3838}.banner p{margin:4px 0}
+.section-label{margin:30px 0 13px;color:#d8def0;font-weight:700;font-size:14px}.step-list{display:grid;gap:11px;margin:14px 0}.step{padding:20px 21px;background:var(--card);border:1px solid var(--line);border-radius:13px;display:grid;grid-template-columns:36px 1fr;gap:14px}.step-index{width:34px;height:34px;border-radius:10px;background:#2c3758;display:grid;place-items:center;color:#c7c1fa;font-size:14px;font-weight:800}.step h3{margin:1px 0 6px;font-size:16px}.step p{margin:4px 0;color:#c1cde0}.checkline{font-size:12px;margin-top:12px;color:#9bd5c1}.checkline strong{color:#abdfcd}
+.quiz{margin:23px 0}.qitem{border:1px solid #33445f;border-radius:13px;padding:20px;background:#152137;margin:13px 0}.qitem h3{font-size:15px;line-height:1.55}.opt{display:flex;align-items:flex-start;gap:11px;border:1px solid #3a4b65;border-radius:10px;padding:11px 13px;margin:8px 0;cursor:pointer;background:#1c2b41;color:#d5deed;font-size:13px;line-height:1.5}.opt:hover{border-color:#8083b0}.opt input{accent-color:#a59ad8;flex:0 0 auto;margin-top:3px}.qitem.good{border-color:#47796b}.qitem.bad{border-color:#825960}.feedback{border-radius:9px;padding:10px 13px;background:#23343c;font-size:13px;margin-top:10px;color:#d4e8e8}.feedback.bad{background:#382d37;color:#f0c7c7}.result{padding:13px 16px;border-radius:11px;border:1px solid #50637a;background:#202d44;font-size:13px;margin-top:12px}
+.gloss-search{width:100%;border:1px solid #41516b;border-radius:12px;background:#172338;color:var(--fg);padding:13px 15px;margin:10px 0 15px;outline:none}.gloss-search:focus{border-color:#9c95d5}.term{border:1px solid var(--line);background:var(--card);border-radius:12px;margin:8px 0}.term summary{padding:14px 17px;cursor:pointer;font-weight:700;color:#e9edfb}.term summary:hover{color:var(--violet)}.term p{padding:0 18px 16px;color:#cbd6e5;margin:0;line-height:1.85}.term.core{border-left:3px solid #9f94cc}
+.sim-tabs{display:flex;gap:7px;flex-wrap:wrap}.sim-tabs .control.selected{background:#373b61;border-color:#857ebb;color:#fff}.sim-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.sim-node{background:#121f33;border:1px solid #364b66;border-radius:13px;padding:16px;min-height:125px}.sim-node h3{margin:0 0 8px;font-size:13px;color:#bfc9e5;text-transform:uppercase;letter-spacing:.6px}.sim-node p{margin:2px 0;font-size:13px}.sim-node.active{border-color:#9fa2d6;background:#24304c}.shared-area{border:1px solid #6683a8;background:#18283e;border-radius:13px;padding:17px;text-align:center;margin:12px 0}.shared-area .value{font:700 17px/1.7 ui-monospace,SFMono-Regular,monospace;overflow-wrap:anywhere}.sem-row{display:flex;gap:12px;justify-content:center;margin:11px 0}.sem{flex:1;text-align:center;border:1px solid var(--line);background:#202c44;border-radius:11px;padding:11px;font-size:12px}.sem b{display:block;font-size:24px}
+.flashbox{min-height:250px;display:flex;flex-direction:column;justify-content:center;background:linear-gradient(140deg,#272d4e,#162139);border:1px solid #5d608e;border-radius:16px;padding:27px;margin:18px 0}.flashbox .answer{border-top:1px solid #566180;padding-top:18px;margin-top:18px;font-size:14px;color:#dbe4f4;white-space:pre-line}.flashbox h2{line-height:1.45}.statebar{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.exam-choice{display:block;width:100%;text-align:left;padding:12px 15px;margin:8px 0;background:#1b2a40;border:1px solid #3b4c67;border-radius:10px;color:var(--fg);font-size:14px}.exam-choice.selected{border-color:#a2a1cf;background:#35385a}.exam-choice:disabled{cursor:default;opacity:.84}.exam-list{margin:10px 0}.exam-result{padding:15px;border:1px solid var(--line);border-radius:12px;margin:10px 0;font-size:13px}.exam-result.bad{border-color:#925c61}.exam-result.good{border-color:#48796d}
+.footer-sources{margin-top:35px;padding-top:21px;border-top:1px solid var(--line);color:var(--dim);font-size:12px}.footer-sources a{margin-right:15px}
+.overlay{display:none}.screenreader{position:absolute;left:-10000px}
+@media(max-width:1050px){.content{padding:24px 25px 70px}.sidebar{width:270px}.layout{grid-template-columns:270px minmax(0,1fr)}} 
+@media(max-width:800px){.layout{display:block}.sidebar{position:fixed;z-index:20;left:0;top:0;width:min(320px,88vw);transform:translateX(-100%);transition:transform .22s}.sidebar.open{transform:none}.overlay.show{display:block;position:fixed;z-index:19;inset:0;background:#0009}.menu-btn{display:inline-flex}.topbar{padding:10px 17px}.topbar .right{display:none}.content{padding:22px 16px 70px}.card-grid{grid-template-columns:1fr}.statrow{grid-template-columns:repeat(2,minmax(0,1fr))}.sim-grid{grid-template-columns:1fr}.hero{padding:23px 18px}.lesson-body .segment{padding:18px}.step{padding:15px}.logo{padding:0 9px}}
+@media print{.sidebar,.topbar,.buttons,.quiz,.overlay{display:none!important}.layout{display:block}.content{max-width:none}.lesson-body .segment{break-inside:avoid}body{background:white;color:black}}
+</style>
+</head>
+<body>
+<div class="overlay" id="overlay"></div>
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Навигация">
+    <div class="logo">OSY<i>.study</i></div>
+    <div class="sub">Теория и подготовка к защите</div>
+    <div class="side-links">
+      <a href="./index.html">← Общий курс по ОС</a>
+      <a href="./lab1.html">Лабораторная №1 <small>IPC · pipe</small></a>
+      <a href="./lab2.html">Лабораторная №2 <small>pthread</small></a>
+      <a href="#home" data-menu>Обзор лабораторной №3</a>
+      <a href="#roadmap" data-menu>План реализации <small>на C</small></a>
+      <a href="#glossary" data-menu>Подробный словарь <small id="termCount"></small></a>
+      <a href="#sim" data-menu>Интерактивные схемы <small>4</small></a>
+      <a href="#flash" data-menu>Карточки для защиты <small>30</small></a>
+      <a href="#exam" data-menu>Тренировочный экзамен</a>
+    </div>
+    <div class="side-caption">Уроки</div>
+    <nav id="lessonNav" aria-label="Уроки ЛР3"></nav>
+    <div class="sidebar-progress">
+      <div id="progressCaption">Изучено 0 из 0 уроков</div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <p class="subtle">Урок засчитывается только при правильных ответах на все вопросы. Прогресс сохраняется в браузере.</p>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:11px"><button class="menu-btn" id="menuBtn" aria-label="Открыть меню">☰</button><span class="bread" id="breadcrumb">Лабораторная №3</span></div>
+      <div class="right">C · macOS · POSIX shared memory и семафоры</div>
+    </header>
+    <main class="content" id="view" aria-live="polite"></main>
+  </div>
+</div>
+<script src="./lab3-data.js"></script>
+<script>
+(function(){
+"use strict";
+const D=window.OSY_LAB3, view=document.getElementById("view"), nav=document.getElementById("lessonNav");
+if(!D){view.innerHTML='<div class="banner warn">Не удалось загрузить данные уроков. Проверьте соединение и обновите страницу.</div>';return}
+const key="osy_study_lab3_progress_v1";
+let state={done:{},marks:{},examHistory:[]};
+try{const saved=JSON.parse(localStorage.getItem(key)||"null");if(saved&&typeof saved==="object"){state={done:saved.done||{},marks:saved.marks||{},examHistory:saved.examHistory||[]}}}catch(e){}
+function save(){try{localStorage.setItem(key,JSON.stringify(state))}catch(e){}}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}
+function fromHash(){let h=decodeURIComponent(location.hash.slice(1)||"home");if(h.indexOf("lesson/")===0)return{page:"lesson",id:h.slice(7)};return{page:h}}
+function anchor(id){location.hash=id}
+function closeSidebar(){document.getElementById("sidebar").classList.remove("open");document.getElementById("overlay").classList.remove("show")}
+function title(t,kicker,lead){return '<p class="eyebrow">'+esc(kicker)+'</p><h1>'+esc(t)+'</h1><p class="lead">'+esc(lead)+'</p>'}
+function stats(){const n=Object.keys(state.done).filter(k=>state.done[k]).length;return '<div class="statrow"><div class="stat"><strong>'+D.lessons.length+'</strong><span>подробный урок</span></div><div class="stat"><strong>'+D.glossary.length+'</strong><span>развёрнутых терминов</span></div><div class="stat"><strong>'+D.lessons.reduce((s,l)=>s+l.quiz.length,0)+'</strong><span>вопроса с объяснениями</span></div><div class="stat"><strong>'+n+'/'+D.lessons.length+'</strong><span>уроков зачтено</span></div></div>'}
+function progress(){const completed=Object.values(state.done).filter(Boolean).length;document.getElementById("progressCaption").textContent="Изучено "+completed+" из "+D.lessons.length+" уроков";document.getElementById("progressFill").style.width=(100*completed/D.lessons.length).toFixed(1)+"%";document.getElementById("termCount").textContent=String(D.glossary.length);
+nav.innerHTML="";let last="";
+D.lessons.forEach((l,i)=>{if(l.group!==last){const c=document.createElement("div");c.className="side-caption";c.textContent=l.group;nav.appendChild(c);last=l.group}const a=document.createElement("a");a.href="#lesson/"+l.id;a.className="lesson-link"+(state.done[l.id]?" completed":"");a.innerHTML='<span>'+String(i+1).padStart(2,"0")+'. '+esc(l.title)+'</span><span class="mark">'+(state.done[l.id]?"✓":"○")+'</span>';nav.appendChild(a)})
+}
+function renderHome(){
+ const sections=[];let group="";
+ D.lessons.forEach((l,i)=>{if(l.group!==group){if(sections.length)sections.push('</div>');group=l.group;sections.push('<h2 class="section-label">'+esc(group)+'</h2><div class="card-grid">')}
+ sections.push('<a class="click-card" href="#lesson/'+l.id+'"><div class="num">'+String(i+1).padStart(2,"0")+' / '+(state.done[l.id]?'Пройден':'Урок')+'</div><h3>'+esc(l.title)+'</h3><p>'+esc(l.intro)+'</p></a>')});sections.push('</div>');
+ view.innerHTML='<div class="hero"><p class="eyebrow">Лабораторная работа №3 · Вариант №2</p><h1>Общая память и семафоры</h1><p>Полный учебный раздел по C на macOS: устройство виртуальной памяти, POSIX shm_open и mmap, fork/execve, именованные семафоры, проект двустороннего обмена, разбор двух программ, тесты и ответы для защиты.</p><div class="buttons"><a class="primary" href="#lesson/l1">Начать с требований</a><a class="control" href="#roadmap">Посмотреть этапы разработки</a><a class="control" href="#sim">Открыть схемы</a></div></div>'
+ +stats()+'<div class="banner warn"><b>Текущее состояние кода:</b> работают создание общей памяти и чтение фиксированной строки 5 10 -3 из client. Семафоры, двусторонний обмен и вычисление суммы пока не реализованы. Уроки про них описывают <b>проект следующего этапа</b>.</div>'
+ +'<h2 class="section-label">Как использовать курс</h2><div class="card-grid"><a class="click-card" href="#glossary"><div class="num">ТЕОРИЯ</div><h3>Словарь без сокращённых определений</h3><p>76 терминов. Основные — с контекстом и применением в нашем коде.</p></a><a class="click-card" href="#flash"><div class="num">ЗАЩИТА</div><h3>Устные карточки с отметками</h3><p>Открой ответ, отметь «Знаю» или «Повторить». Ошибки сохраняются.</p></a><a class="click-card" href="#sim"><div class="num">ПРАКТИКА</div><h3>Пошаговые интерактивные схемы</h3><p>Общая память, fork/execve, запрос–ответ и аварийное завершение.</p></a><a class="click-card" href="#exam"><div class="num">ПРОВЕРКА</div><h3>Тренировочный экзамен</h3><p>15 вопросов из уроков с проверкой и развёрнутыми пояснениями.</p></a></div>'
+ +sections.join("")+'<div class="footer-sources"><b>Основа:</b> методичка «Лабораторные работы №3», уточнение преподавателя, проверенный прототип server.c/client.c. Дополнительные источники интерфейсов POSIX: <a href="https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/shm_open.2.html" target="_blank" rel="noopener">Apple: shm_open</a><a href="https://man.freebsd.org/cgi/man.cgi?query=sem_open&sektion=2&manpath=macOS+26.7" target="_blank" rel="noopener">macOS: sem_open</a></div>';
+}
+function renderLesson(id){const l=D.lessons.find(x=>x.id===id);if(!l){anchor("home");return}const idx=D.lessons.indexOf(l);const total=D.lessons.length;
+let parts=title(l.title,l.group+" · Урок "+(idx+1)+" из "+total,l.intro)+'<div class="banner">'+(state.done[l.id]?'<b>Урок зачтён.</b> Все вопросы были пройдены правильно.':'<b>Урок не зачтён.</b> Прочитай разбор и ответь правильно на каждый вопрос. Ошибочные ответы можно исправлять.')+'</div>';
+parts+='<div class="lesson-body">'+l.blocks.map(b=>'<section class="segment"><h2>'+esc(b.h)+'</h2>'+b.body+'</section>').join("")+'</div>';
+parts+='<section class="quiz" id="quiz"><h2>Проверка понимания</h2><p class="muted">Урок считается завершённым только при <b>100% правильных ответов</b>. Проверить можно повторно после исправления.</p>';
+parts+=l.quiz.map((q,i)=>'<div class="qitem" data-q="'+i+'"><h3>'+(i+1)+'. '+esc(q.q)+'</h3>'+q.options.map((o,j)=>'<label class="opt"><input type="radio" name="q'+i+'" value="'+j+'"><span>'+esc(o)+'</span></label>').join("")+'<div class="feedback" hidden></div></div>').join("");
+parts+='<div class="buttons"><button class="primary" id="checkQuiz" data-id="'+l.id+'">Проверить ответы</button><button class="control" id="clearQuiz">Ответить заново</button></div><div id="quizResult" class="result" hidden></div></section>';
+parts+='<div class="buttons" style="justify-content:space-between"><a class="control" href="#'+(idx===0?"home":"lesson/"+D.lessons[idx-1].id)+'">← '+(idx===0?"К обзору":"Предыдущий урок")+'</a><a class="primary" href="#'+(idx===total-1?"roadmap":"lesson/"+D.lessons[idx+1].id)+'">'+(idx===total-1?"План разработки":"Следующий урок")+' →</a></div>';
+view.innerHTML=parts;}
+function quizCheck(id){const l=D.lessons.find(x=>x.id===id);if(!l)return;let right=0,filled=0;
+l.quiz.forEach((q,i)=>{const el=view.querySelector('.qitem[data-q="'+i+'"]');const sel=el.querySelector("input:checked");const feedback=el.querySelector(".feedback");el.classList.remove("good","bad");if(!sel){feedback.hidden=false;feedback.className="feedback bad";feedback.textContent="Ответ не выбран. Выбери вариант и проверь снова.";return}filled++;const ok=Number(sel.value)===q.answer;if(ok)right++;el.classList.add(ok?"good":"bad");feedback.hidden=false;feedback.className="feedback"+(ok?"":" bad");feedback.textContent=(ok?"Верно. ":"Неверно. Правильный ответ: "+q.options[q.answer]+". ")+q.why;});
+const res=document.getElementById("quizResult");res.hidden=false;if(filled===l.quiz.length && right===l.quiz.length){state.done[id]=true;save();progress();res.innerHTML='<b>Урок зачтён: '+right+' из '+l.quiz.length+'.</b> Переходи к следующему.';}else{res.innerHTML='<b>Пока не зачтён: '+right+' из '+l.quiz.length+'.</b> Исправь ошибки и проверь повторно.';}}
+function renderGlossary(){let core=new Set(["Процесс","Виртуальное адресное пространство","Виртуальная память","IPC","Shared memory","Memory mapping","shm_open()","ftruncate()","mmap()","MAP_SHARED","fork()","execve()","Семафор","sem_open()","sem_wait()","sem_post()","Мьютекс","Race condition","Deadlock"]);
+view.innerHTML=title("Подробный словарь","Термины для защиты","Каждое определение раскрывает смысл механизма. Основные термины выделены слева; поиск работает по названию и тексту определения.")
++'<input class="gloss-search" type="search" id="glossSearch" placeholder="Искать: shared memory, TLB, семафор, waitpid…" aria-label="Поиск термина"><p class="subtle" id="glossCount"></p><div id="glossList">'
++D.glossary.map(([term,desc])=>'<details class="term'+(core.has(term)?" core":"")+'" data-term="'+esc((term+" "+desc).toLowerCase())+'"><summary>'+esc(term)+(core.has(term)?' <span class="pill">Основное</span>':'')+'</summary><p>'+esc(desc)+'</p></details>').join("")+'</div>';
+document.getElementById("glossCount").textContent="Найдено: "+D.glossary.length+" из "+D.glossary.length;
+document.getElementById("glossSearch").addEventListener("input",function(){const value=this.value.toLowerCase().trim();let n=0;document.querySelectorAll(".term").forEach(t=>{const yes=t.dataset.term.includes(value);t.hidden=!yes;if(yes)n++});document.getElementById("glossCount").textContent="Найдено: "+n+" из "+D.glossary.length;});
+}
+function renderRoadmap(){view.innerHTML=title("План дальнейшей разработки","Чистый C · macOS","Каждый шаг — отдельный проверяемый этап. План описывает будущую реализацию, а не выдаёт её за уже готовый проект.")
++'<div class="banner good"><b>Уже реализовано и проверено:</b> отдельные server и client; уникальное имя shm на основе PID; shm_open → ftruncate → mmap; fork → execve; чтение фиксированной строки в client; ожидание и освобождение отображения/имени.</div>'
++'<div class="step-list">'+D.roadmap.map((s,i)=>'<div class="step"><div class="step-index">'+(i+1)+'</div><div><h3>'+esc(s.title)+'</h3><p>'+esc(s.detail)+'</p><div class="checkline"><strong>Критерий готовности:</strong> '+esc(s.check)+'</div><span class="pill pending" style="margin-top:11px">Следующий этап</span></div></div>').join("")+'</div>'
++'<div class="banner warn"><b>Особое внимание:</b> сбой клиента, когда server уже заблокирован на response_sem; длинные строки относительно input[4096]; EINTR в sem_wait/waitpid; проверка полных и частичных записей. Эти ситуации не решаются только двумя sem_post.</div>'
++'<div class="buttons"><a class="primary" href="#lesson/l12">Изучить протокол семафоров</a><a class="control" href="#sim">Проверить на схемах</a></div>';}
+let simName="handshake",simIndex=0;
+const simTitles={handshake:"Запрос → ответ: два семафора",mapping:"shm_open → ftruncate → mmap",fork:"fork → execve → client",failure:"Клиент аварийно завершился"};
+function renderSim(){const arr=D.sim[simName],s=arr[simIndex];let withSem=simName==="handshake"||simName==="failure";
+view.innerHTML=title("Интерактивные схемы","Механизмы ЛР №3","Схемы показывают последовательность событий. Величины счётчиков в модели демонстрационные; на конкретном компьютере точный момент пробуждения определяется планировщиком ОС.")
++'<div class="sim-tabs">'+Object.keys(D.sim).map(k=>'<button class="control'+(simName===k?" selected":"")+'" data-sim="'+k+'">'+esc(simTitles[k])+'</button>').join("")+'</div>'
++'<div class="card"><div class="statebar"><b>Шаг '+(simIndex+1)+' / '+arr.length+': '+esc(s.t)+'</b><span>'+esc(simTitles[simName])+'</span></div><div class="sim-grid" style="margin-top:15px"><div class="sim-node'+(["server","both"].includes(s.active)?" active":"")+'"><h3>Server · родитель</h3><p>'+esc(s.server)+'</p></div><div class="sim-node'+(["client","both"].includes(s.active)?" active":"")+'"><h3>Client · ребёнок</h3><p>'+esc(s.client)+'</p></div></div>'
++'<div class="shared-area"><div class="subtle">Shared Memory / состояние объекта</div><div class="value">'+esc(s.input)+'</div><div class="small muted">Ответ / отображения: '+esc(s.output)+'</div></div>'
++(withSem?'<div class="sem-row"><div class="sem">request_sem<b>'+s.req+'</b></div><div class="sem">response_sem<b>'+s.res+'</b></div></div>':"")
++'<div class="banner"><b>Почему так:</b> '+esc(s.why)+'</div><div class="buttons"><button class="control" data-sim-step="-1" '+(simIndex===0?"disabled":"")+'>← Назад</button><button class="primary" data-sim-step="1" '+(simIndex===arr.length-1?"disabled":"")+'>Дальше →</button><button class="control" data-sim-reset="1">Сначала</button></div></div>'
++'<div class="banner warn">Схема показывает принцип работы. Изображённые операции с семафорами и двусторонним обменом будут реализованы в коде на следующих этапах; текущая версия server/client их ещё не содержит.</div>';}
+let flashFilter="all",flashIdx=0,flashRevealed=false;
+function filteredCards(){return D.flashcards.map((c,i)=>({c,i})).filter(x=>flashFilter!=="mistakes"||state.marks[x.i]===0)}
+function renderFlash(){const arr=filteredCards();if(flashIdx>=arr.length)flashIdx=Math.max(0,arr.length-1);
+const marked=Object.keys(state.marks).length,know=Object.values(state.marks).filter(x=>x===1).length,mistakes=Object.values(state.marks).filter(x=>x===0).length;
+let h=title("Карточки к устной защите","Отметки сохраняются","Сначала сформулируй ответ вслух. Потом раскрой полный ответ и отметь, понял ли тему. Неотвеченные и ошибочные карточки можно повторять.");
+h+='<div class="statebar"><span>Отмечено: '+marked+'/'+D.flashcards.length+' · Знаю: '+know+' · Повторить: '+mistakes+'</span><span>Фильтр: '+(flashFilter==="all"?"все":"ошибки")+'</span></div>';
+h+='<div class="buttons"><button class="control'+(flashFilter==="all"?" primary":"")+'" data-flash-filter="all">Все карточки</button><button class="control'+(flashFilter==="mistakes"?" primary":"")+'" data-flash-filter="mistakes">Только «Повторить» ('+mistakes+')</button></div>';
+if(!arr.length){h+='<div class="card">В этом фильтре пока нет карточек. Сначала отметь несколько ответов.</div>'}
+else {const item=arr[flashIdx];h+='<div class="statebar"><span>Карточка '+(flashIdx+1)+' из '+arr.length+'</span><span>Метка: '+(state.marks[item.i]===1?"Знаю":state.marks[item.i]===0?"Повторить":"Не оценена")+'</span></div>';
+h+='<div class="flashbox"><p class="eyebrow">Вопрос на защите</p><h2>'+esc(item.c[0])+'</h2>'+(flashRevealed?'<div class="answer">'+esc(item.c[1])+'</div>':'<p class="muted small">Ответ пока скрыт.</p>')+'</div>';
+h+='<div class="buttons"><button class="control" data-flash-move="-1" '+(flashIdx===0?"disabled":"")+'>← Назад</button><button class="primary" data-flash-reveal="1">'+(flashRevealed?"Скрыть ответ":"Показать ответ")+'</button><button class="control" data-flash-move="1" '+(flashIdx===arr.length-1?"disabled":"")+'>Следующая →</button></div>';
+h+='<div class="buttons"><button class="control" data-flash-grade="0">Не знаю / повторить</button><button class="control" data-flash-grade="1">Знаю / верно</button></div>'}
+h+='<p class="subtle">Оценки карточек хранятся в localStorage этого браузера. Они не изменяют статус прохождения уроков.</p>';
+view.innerHTML=h;}
+let exam=null;
+function renderExam(){if(!exam){view.innerHTML=title("Тренировочный экзамен","Проверка перед защитой","15 вопросов случайным образом выбираются из курса. Варианты можно менять до проверки. После завершения показываются объяснения всех ответов.")
++'<div class="card"><h2>Проверка понимания ЛР №3</h2><p>Вопросы затрагивают виртуальную память, POSIX shared memory, fork/execve, семафоры, протокол и обработку ошибок. Проверяй не только правильный вариант, но и обоснование.</p><div class="buttons"><button class="primary" data-exam-start="1">Начать экзамен · 15 вопросов</button></div></div>';return}
+if(exam.finished){let correct=exam.items.filter((it,i)=>exam.answers[i]===it.answer).length;view.innerHTML=title("Результат экзамена","Самопроверка",correct+" из "+exam.items.length+" правильных ответов. Ниже приведены ошибки и пояснения к каждому вопросу.")
++'<div class="statrow"><div class="stat"><strong>'+correct+'</strong><span>правильно</span></div><div class="stat"><strong>'+exam.items.length+'</strong><span>вопросов</span></div><div class="stat"><strong>'+Math.round(100*correct/exam.items.length)+'%</strong><span>точность</span></div><div class="stat"><strong>'+exam.items.filter((it,i)=>exam.answers[i]!==it.answer).length+'</strong><span>ошибок</span></div></div>'
++exam.items.map((it,i)=>'<div class="exam-result '+(exam.answers[i]===it.answer?"good":"bad")+'"><b>'+(i+1)+'. '+esc(it.q)+'</b><p>Твой ответ: '+(exam.answers[i]===undefined?"не выбран":esc(it.options[exam.answers[i]]))+'</p><p><b>Правильно:</b> '+esc(it.options[it.answer])+'</p><p>'+esc(it.why)+'</p></div>').join("")
++'<div class="buttons"><button class="primary" data-exam-start="1">Новый экзамен</button><a class="control" href="#home">К урокам</a></div>';return}
+const i=exam.idx,it=exam.items[i];
+view.innerHTML=title("Тренировочный экзамен","Вопрос "+(i+1)+" из "+exam.items.length,"Ответь на вопрос и переходи к следующему. Результат и объяснения будут показаны после последнего.")
++'<div class="progress-track"><div class="progress-fill" style="width:'+((i+1)*100/exam.items.length)+'%"></div></div><div class="card"><h2>'+esc(it.q)+'</h2>'
++it.options.map((o,j)=>'<button class="exam-choice'+(exam.answers[i]===j?" selected":"")+'" data-exam-answer="'+j+'">'+esc(o)+'</button>').join("")
++'<div class="buttons"><button class="control" data-exam-move="-1" '+(i===0?"disabled":"")+'>← Назад</button><button class="primary" data-exam-move="1" '+(exam.answers[i]===undefined?"disabled":"")+'>'+(i===exam.items.length-1?"Завершить и проверить":"Следующий вопрос →")+'</button></div></div>';
+}
+function startExam(){const pool=D.lessons.flatMap(l=>l.quiz.map(q=>Object.assign({lesson:l.title},q)));for(let i=pool.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}exam={items:pool.slice(0,15),answers:{},idx:0,finished:false};renderExam()}
+function render(){const r=fromHash(),names={home:"Обзор",roadmap:"План разработки",glossary:"Словарь",sim:"Схемы",flash:"Карточки",exam:"Экзамен",lesson:"Урок"};document.getElementById("breadcrumb").textContent="ЛР №3 / "+(names[r.page]||"Обзор");
+document.querySelectorAll('.side-links a[href^="#"],.lesson-link').forEach(a=>a.classList.toggle("active",a.getAttribute("href")===(r.page==="lesson"?"#lesson/"+r.id:"#"+r.page)));
+if(r.page==="lesson")renderLesson(r.id);else if(r.page==="glossary")renderGlossary();else if(r.page==="roadmap")renderRoadmap();else if(r.page==="sim")renderSim();else if(r.page==="flash")renderFlash();else if(r.page==="exam")renderExam();else renderHome();closeSidebar();window.scrollTo({top:0,behavior:"instant"})}
+document.addEventListener("click",function(e){const t=e.target.closest("button");if(!t)return;
+if(t.id==="checkQuiz"){quizCheck(t.dataset.id);return}
+if(t.id==="clearQuiz"){view.querySelectorAll('input[type="radio"]').forEach(x=>x.checked=false);view.querySelectorAll(".qitem").forEach(x=>{x.classList.remove("good","bad");x.querySelector(".feedback").hidden=true});document.getElementById("quizResult").hidden=true;return}
+if(t.dataset.sim!==undefined){simName=t.dataset.sim;simIndex=0;renderSim();return}
+if(t.dataset.simStep!==undefined){simIndex=Math.min(D.sim[simName].length-1,Math.max(0,simIndex+Number(t.dataset.simStep)));renderSim();return}
+if(t.dataset.simReset!==undefined){simIndex=0;renderSim();return}
+if(t.dataset.flashFilter!==undefined){flashFilter=t.dataset.flashFilter;flashIdx=0;flashRevealed=false;renderFlash();return}
+if(t.dataset.flashMove!==undefined){flashIdx=Math.max(0,Math.min(filteredCards().length-1,flashIdx+Number(t.dataset.flashMove)));flashRevealed=false;renderFlash();return}
+if(t.dataset.flashReveal!==undefined){flashRevealed=!flashRevealed;renderFlash();return}
+if(t.dataset.flashGrade!==undefined){const items=filteredCards();if(!items.length)return;state.marks[items[flashIdx].i]=Number(t.dataset.flashGrade);save();const left=filteredCards();if(flashFilter==="mistakes"&&flashIdx>=left.length)flashIdx=Math.max(0,left.length-1);else if(flashFilter==="all"&&flashIdx<left.length-1)flashIdx++;flashRevealed=false;renderFlash();return}
+if(t.dataset.examStart!==undefined){startExam();return}
+if(t.dataset.examAnswer!==undefined){if(!exam||exam.finished)return;exam.answers[exam.idx]=Number(t.dataset.examAnswer);renderExam();return}
+if(t.dataset.examMove!==undefined){if(!exam||exam.finished)return;const next=exam.idx+Number(t.dataset.examMove);if(next>=exam.items.length){if(Object.keys(exam.answers).length!==exam.items.length)return;exam.finished=true;let n=exam.items.filter((it,i)=>it.answer===exam.answers[i]).length;state.examHistory.push({date:new Date().toISOString(),correct:n,total:exam.items.length});state.examHistory=state.examHistory.slice(-10);save()}else{exam.idx=Math.max(0,next)}renderExam();return}
+});
+document.getElementById("menuBtn").addEventListener("click",()=>{document.getElementById("sidebar").classList.toggle("open");document.getElementById("overlay").classList.toggle("show")});
+document.getElementById("overlay").addEventListener("click",closeSidebar);
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSidebar()});
+window.addEventListener("hashchange",render);
+progress();render();
+})();
+</script>
+</body>
+</html>
